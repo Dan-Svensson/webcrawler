@@ -125,7 +125,7 @@ class db:
             # rint(i)
             # print(url + i[0])
             # print()
-            urllist.append(url + i[0])
+            urllist.append("http://" + url + i[0])
         # print("URl= ", urllist)
         print("URLlist Done!")
         return urllist
@@ -273,7 +273,10 @@ class run:
 
 
 x = run('test.db')
-x.a.crafturllist()
+# x.a.crafturllist()
+for each in x.a.crafturllist():
+    print("Indexing: ", each)
+    x.index(each)
 # x.a.DBcreate()
 # x.a.insertURLs((None,100000,'HTTP','example.org',0))
 # x.index('http://www.iana.org')

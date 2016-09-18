@@ -2,77 +2,72 @@
 
 # Modules
 
+import datetime
+import re
+import sqlite3
+import time
 import urllib.request
 import urllib.parse
-from html.parser import HTMLParser
-import http.client
-import sqlite3
-import re
-import datetime
-import time
 
+dbconn = None
+c = None
+r = None
+r2 = None
+
+
+def Init():
+    DBConnect(':memory:')
+    DBInit()
+    regex()
 
 def adapt_datetime(ts):
     return time.mktime(ts.timetuple())
 
 ## Storage
+def DBConnect(db):
+    ## Adapters
+    sqlite3.register_adapter(datetime.datetime, adapt_datetime)
+
+    # Connect
+    global dbconn
+    dbconn = sqlite3.connect(db)
+    global c
+    c = dbconn.cursor()
+    dbconn.row_factory = sqlite3.Row
 
 
-sqlite3.register_adapter(datetime.datetime, adapt_datetime)
+def DBInit():
+    c.execute('''CREATE TABLE system(
+        id INTEGER PRIMARY KEY,
+        date int,
+        datatype text unique,
+        data text
+        )''')
 
-dbconn = sqlite3.connect(':memory:')
-dbconn.row_factory = sqlite3.Row
-c = dbconn.cursor()
-c.execute('''CREATE TABLE system(
-    id INTEGER PRIMARY KEY,
-    date int,
-    datatype text unique,
-    data text
-    )''')
+    c.execute('''CREATE TABLE urls(
+        id INTEGER PRIMARY KEY,
+        date int,
+        scheme text,
+        netloc text unique,
+        indexed int
+        )''')
 
-c.execute('''CREATE TABLE urls(
-    id INTEGER PRIMARY KEY,
-    date int,
-    scheme text,
-    netloc text unique,
-    indexed int
-    )''')
+    c.execute('''CREATE TABLE pages(
+        id INTEGER PRIMARY KEY,
+        page text,
+        indexed int,
+        pageurl int,
+        FOREIGN KEY(pageurl) REFERENCES urls(id)
+        )''')
 
-c.execute('''CREATE TABLE pages(
-    id INTEGER PRIMARY KEY,
-    page text,
-    indexed int,
-    pageurl int,
-    FOREIGN KEY(pageurl) REFERENCES urls(id)
-    )''')
-# a = urllib.parse.urlparse('http://example.com')
-# s = (None,1159704000,a[0],a[1],0)
-# c.execute("INSERT INTO urls VALUES (?,?,?,?,?)",s)
-
-dbconn.commit()
-
-#t = ('RHAT',)
-#c.execute('SELECT * FROM stocks WHERE symbol=?', t)
+    dbconn.commit()
 
 
-
-#c.executemany('INSERT INTO stocks VALUES (?,?,?,?,?)', purchases)
-
-#for row in c.execute("SELECT * FROM stocks WHERE trans = 'BUY' ORDER BY price"):
-    #print(row)
-
-
-
-## regex
-
-r = re.compile(r'href=[\'"]?([^\'" >]+)')
-r2 = re.compile(r'^/')
-## HTML parser
-
-
-# site = urllib.parse.urlparse('http://example.com')
-# s = (None,1159704000,site[0],site[1],0)
-# c.execute("INSERT INTO urls VALUES (?,?,?,?,?)",s)
+def regex():
+    global r
+    r = re.compile(r'href=[\'"]?([^\'" >]+)')
+    global r2
+    r2 = re.compile(r'^/')
 
 # urls table
 #   id INTEGER PRIMARY KEY,
@@ -88,6 +83,7 @@ r2 = re.compile(r'^/')
 #   pageurl int,   FOREIGN KEY(pageurl) REFERENCES urls(id)
 
 ## requests
+Init()
 
 url = urllib.request.Request("http://www.iana.org/domains/reserved", data=None)
 
